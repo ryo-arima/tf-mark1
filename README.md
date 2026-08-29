@@ -35,35 +35,53 @@ terraform -chdir=terraform plan -var-file=values/development.tfvars
 terraform -chdir=terraform apply -var-file=values/development.tfvars
 ```
 
-The development values create a VPC, an ECS cluster, a DynamoDB table, and an SQS queue. Each AWS provider endpoint is pinned to `localhost:4566`, and the provider uses local `test` credentials, so no real AWS credentials are required.
+The development values create 19 resources across 15 infrastructure categories. The stack adds two subnets, an application load balancer with an HTTP listener, and a CodeBuild project that consumes a role from the dedicated IAM module. Each AWS provider endpoint is pinned to `localhost:4566`, and the provider uses local `test` credentials, so no real AWS credentials are required.
 
 ## Terraform structure
 
-The Terraform configuration separates environment values, infrastructure abstractions, AWS service composition, reusable resources, entity types, and shared utility processing.
+The Terraform configuration separates environment values, infrastructure abstractions, AWS service resources, entity types, and shared utility processing.
 
 ```text
 terraform/
 |-- entity/
-|   |-- module/             # Network, compute, storage, and messaging input types
-|   |-- service/            # VPC, ECS, DynamoDB, and SQS input types
+|   |-- module/             # Infrastructure category input types
+|   |-- service/            # AWS service input types
 |   `-- util/               # Shared context types
 |-- main.tf
 |-- modules/
+|   |-- analytics/
+|   |-- api/
+|   |-- cicd/
 |   |-- compute/
+|   |-- configuration/
+|   |-- datastore/
+|   |-- dns/
+|   |-- event/
+|   |-- iam/
+|   |-- loadbalancer/
 |   |-- messaging/
+|   |-- monitor/
 |   |-- network/
-|   `-- storage/
+|   |-- registry/
+|   `-- security/
 |-- provider.tf
 |-- templates/
-|   |-- dynamodb/           # Reusable resource template
-|   |-- ecs/
-|   |-- services/
-|   |   |-- dynamodb/       # AWS service composition
-|   |   |-- ecs/
-|   |   |-- sqs/
-|   |   `-- vpc/
-|   |-- sqs/
-|   `-- vpc/
+|   `-- services/
+|       |-- apigatewayv2/   # AWS service resource definition
+|       |-- cloudwatch_logs/
+|       |-- codebuild/
+|       |-- dynamodb/
+|       |-- ecr/
+|       |-- ecs/
+|       |-- elbv2/
+|       |-- eventbridge/
+|       |-- glue/
+|       |-- iam/
+|       |-- kms/
+|       |-- route53/
+|       |-- sqs/
+|       |-- ssm/
+|       `-- vpc/
 |-- utils/
 |   `-- naming.tf
 `-- values/
@@ -74,21 +92,30 @@ terraform/
 The dependency flow is:
 
 ```text
-root -> values -> modules -> templates/services -> templates
-          |          |
-          |          `-> entity/service
+root -> values -> modules -> templates/services
+          |                   |
+          |                   `-> entity/service
           `-> entity/module and entity/util
 ```
 
 - `values/` owns environment parameters and calls infrastructure abstraction modules.
 - `entity/` centralizes strict Terraform object types and validation at module, service, and utility boundaries.
-- `modules/` exposes infrastructure concepts such as network, compute, storage, and messaging. These modules derive service-specific settings and call `templates/services/`.
-- `templates/services/<aws-service>/base.tf` composes a reusable AWS resource template for one AWS service.
-- `templates/<aws-service>/` contains reusable AWS resource definitions.
+- `modules/` exposes infrastructure concepts such as datastore, load balancer, event, CI/CD, IAM, monitor, network, and security. Concept modules remain thin and contain no AWS resources or service validation modules.
+- `modules/iam` maps one-to-one to `templates/services/iam`; dependent modules consume its outputs instead of calling the IAM service directly.
+- [terraform/modules/README.md](terraform/modules/README.md) assigns supported AWS service families to module categories and identifies each default representative.
+- `templates/services/<aws-service>/base.tf` validates service parameters through `entity/service/` and defines the AWS resources for one service.
+- AWS service directories exist only under `templates/services/`; do not add service directories directly under `templates/`.
 - `utils/` contains shared or miscellaneous Terraform processing that is not owned by one AWS service.
 - The root `main.tf` delegates composition to `values/` and does not define AWS resources directly.
 
-To add an infrastructure concept, define its values schema under `entity/module/`, create its module under `modules/`, map it to typed service parameters under `entity/service/`, and call the module from `values/base.tf`. Add or reuse the corresponding resource and service templates as required.
+Cross-module dependencies are connected only by the values layer:
+
+- `network.subnet_ids` is passed to `loadbalancer`; the load balancer module does not create network resources.
+- `iam.role_arn` is passed to `cicd`; the CI/CD module does not create IAM resources or call the IAM service template.
+
+This keeps each concept independently reusable while preserving explicit dependency direction.
+
+To add an infrastructure concept, define its values schema under `entity/module/`, create a thin orchestration module under `modules/`, define the service type under `entity/service/`, validate it from `templates/services/<aws-service>/base.tf`, and call the concept module from `values/base.tf`.
 
 ## Common commands
 
@@ -133,6 +160,6 @@ Compose and MiniStack options are documented in [.env.example](.env.example).
 - `STACKPORT_PORT`: Host port for the StackPort Web UI, defaulting to `8080`.
 - `STACKPORT_ALLOW_WRITES`: Enables resource mutation from StackPort. It defaults to `false` for a read-only resource browser.
 
-Terraform environment parameters are defined in [terraform/values/development.tfvars](terraform/values/development.tfvars). Copy that file to add another environment, then update resource names, tags, network settings, compute settings, storage settings, and messaging settings. When changing the MiniStack port or region, keep `.env` and the selected Terraform values file synchronized.
+Terraform environment parameters are defined in [terraform/values/development.tfvars](terraform/values/development.tfvars). Copy that file to add another environment, then update resource names, tags, and the relevant infrastructure category objects. When changing the MiniStack port or region, keep `.env` and the selected Terraform values file synchronized.
 
 MiniStack mounts the Docker socket so it can launch real containers for services such as Lambda, RDS, and ECS. Use this configuration only in a trusted local development environment.

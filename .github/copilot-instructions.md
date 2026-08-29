@@ -33,11 +33,11 @@
 - `terraform/provider.tf` routes supported AWS services to the MiniStack endpoint.
 - `terraform/values/` owns environment parameter files and the environment composition entry point.
 - `terraform/entity/module/` defines strict input types for infrastructure abstraction modules.
-- `terraform/entity/service/` defines strict input types for AWS service composition modules.
+- `terraform/entity/service/` defines strict input types consumed by concrete AWS service templates.
 - `terraform/entity/util/` defines strict input types for shared utility context.
-- `terraform/modules/<concept>/` contains infrastructure abstractions such as network, compute, storage, and messaging. Each abstraction calls modules under `terraform/templates/services/`.
-- `terraform/templates/<aws-service>/` contains reusable AWS resource modules and their configurable inputs and outputs.
-- `terraform/templates/services/<aws-service>/base.tf` composes templates with service-specific settings.
+- `terraform/modules/<concept>/` contains thin infrastructure abstractions such as datastore, load balancer, event, CI/CD, IAM, monitor, network, and security. Each abstraction calls modules under `terraform/templates/services/`.
+- `terraform/modules/README.md` is the AWS service-to-category catalog and records the default representative for each implemented abstraction.
+- `terraform/templates/services/<aws-service>/base.tf` validates service parameters through `terraform/entity/service/` and defines resources for one AWS service.
 - `terraform/utils/` contains shared or miscellaneous Terraform processing that is not owned by one AWS service.
 - `terraform/main.tf` only delegates infrastructure composition to `terraform/values/`.
 - `Makefile` provides common Compose and Terraform operations.
@@ -50,13 +50,18 @@
 - Define and validate every values-layer abstraction object under `terraform/entity/module/`.
 - Define and validate every service composition object under `terraform/entity/service/`.
 - Put infrastructure abstractions under `terraform/modules/<concept>/` and have them call `terraform/templates/services/<aws-service>/`.
-- Put reusable AWS resource definitions under `terraform/templates/<aws-service>/`.
-- Create one directory per AWS service under `terraform/templates/services/` and place its composition in an exact `base.tf` file.
+- Keep concept modules thin: they may derive names, merge tags, and connect dependencies, but must not define AWS resources or instantiate `entity/service` directly.
+- Keep IAM one-to-one: `terraform/modules/iam/` may call only `terraform/templates/services/iam/`, and other concept modules must consume IAM outputs instead of calling the IAM service template directly.
+- Connect cross-module dependencies in `terraform/values/base.tf`; concept modules must not reach into sibling concept modules.
+- Instantiate `entity/service` from each concrete service template before using service parameters in AWS resources.
+- Classify a new AWS service using `terraform/modules/README.md`; update the catalog when introducing or changing a category.
+- Create one directory per AWS service under `terraform/templates/services/` and place its resource definitions in an exact `base.tf` file.
+- Do not create AWS service directories directly under `terraform/templates/`.
 - Put miscellaneous shared Terraform processing under `terraform/utils/`.
-- Do not define AWS resources directly in the root module, values layer, infrastructure abstraction modules, or `terraform/templates/services/`; service modules must compose reusable resource templates.
+- Do not define AWS resources directly in the root module, values layer, or infrastructure abstraction modules; AWS resources belong under `terraform/templates/services/`.
 - Wire every new infrastructure abstraction from `terraform/values/base.tf` and keep the root module limited to calling the values layer.
-- Use `storage` as the infrastructure abstraction name; do not introduce the misspelling `strage`.
-- Run `terraform fmt -recursive` after changing Terraform files.
+- Use `datastore` as the infrastructure abstraction name; do not use `storage` or the misspelling `strage` for this category.
+- Format every changed Terraform file after editing it. Use the repository `make tf-fmt` target for the complete configuration.
 - Do not commit generated Terraform artifacts such as `.terraform/`, `*.tfstate`, or `*.tfplan`.
 - Keep `.terraform.lock.hcl` under version control for reproducibility.
 - Do not commit `.env`; update `.env.example` when shared configuration examples change.
@@ -82,7 +87,7 @@ docker compose config
 docker compose up -d --wait
 curl --fail http://localhost:4566/_ministack/health
 curl --fail http://localhost:8080/api/health
-terraform -chdir=terraform fmt -check -recursive
+find terraform -type f -name '*.tf' -not -path '*/.terraform/*' -exec terraform fmt -check {} +
 terraform -chdir=terraform init
 terraform -chdir=terraform validate
 terraform -chdir=terraform plan -var-file=values/development.tfvars
@@ -96,7 +101,7 @@ terraform -chdir=terraform plan -var-file=values/development.tfvars
 ## Completion criteria
 
 - Syntax validation succeeds for every changed configuration file.
-- Terraform code follows the `values/`, `entity/`, `modules/`, `templates/services/`, `templates/`, and `utils/` layer boundaries.
+- Terraform code follows the `values/`, `entity/`, `modules/`, `templates/services/`, and `utils/` layer boundaries.
 - MiniStack reports a healthy status.
 - StackPort reports a healthy status and reaches MiniStack through the Compose network.
 - The Terraform plan shows only the intended changes.

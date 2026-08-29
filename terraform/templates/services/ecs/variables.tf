@@ -1,4 +1,4 @@
 variable "config" {
-  description = "Validated ECS service parameters"
+  description = "ECS service parameters"
   type        = any
 }

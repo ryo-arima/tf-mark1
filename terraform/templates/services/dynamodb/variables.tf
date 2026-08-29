@@ -1,4 +1,4 @@
 variable "config" {
-  description = "Validated DynamoDB service parameters"
+  description = "DynamoDB service parameters"
   type        = any
 }

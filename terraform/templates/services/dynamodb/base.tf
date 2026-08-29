@@ -1,15 +1,24 @@
-module "locks_table" {
-  source = "../../dynamodb"
+module "service_entity" {
+  source = "../../../entity/service"
 
-  providers = {
-    aws = aws
+  dynamodb = var.config
+}
+
+resource "aws_dynamodb_table" "this" {
+  name           = module.service_entity.dynamodb.table_name
+  billing_mode   = module.service_entity.dynamodb.billing_mode
+  hash_key       = module.service_entity.dynamodb.hash_key
+  read_capacity  = module.service_entity.dynamodb.billing_mode == "PROVISIONED" ? module.service_entity.dynamodb.read_capacity : null
+  write_capacity = module.service_entity.dynamodb.billing_mode == "PROVISIONED" ? module.service_entity.dynamodb.write_capacity : null
+  tags           = module.service_entity.dynamodb.tags
+
+  attribute {
+    name = module.service_entity.dynamodb.hash_key
+    type = module.service_entity.dynamodb.hash_key_type
   }
+}
 
-  name           = var.config.table_name
-  billing_mode   = var.config.billing_mode
-  hash_key       = var.config.hash_key
-  hash_key_type  = var.config.hash_key_type
-  read_capacity  = var.config.read_capacity
-  write_capacity = var.config.write_capacity
-  tags           = var.config.tags
+moved {
+  from = module.locks_table.aws_dynamodb_table.this
+  to   = aws_dynamodb_table.this
 }

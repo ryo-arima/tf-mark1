@@ -11,6 +11,7 @@ provider "aws" {
   endpoints {
     acm             = var.ministack_endpoint
     apigateway      = var.ministack_endpoint
+    apigatewayv2    = var.ministack_endpoint
     appsync         = var.ministack_endpoint
     athena          = var.ministack_endpoint
     bedrock         = var.ministack_endpoint

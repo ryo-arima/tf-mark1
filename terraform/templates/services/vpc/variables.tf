@@ -1,4 +1,4 @@
 variable "config" {
-  description = "Validated VPC service parameters"
+  description = "VPC service parameters"
   type        = any
 }

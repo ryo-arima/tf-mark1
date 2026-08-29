@@ -1,4 +1,4 @@
 variable "config" {
-  description = "Validated SQS service parameters"
+  description = "SQS service parameters"
   type        = any
 }

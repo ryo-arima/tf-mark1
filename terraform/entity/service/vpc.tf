@@ -6,7 +6,12 @@ variable "vpc" {
     cidr_block           = string
     enable_dns_support   = bool
     enable_dns_hostnames = bool
-    tags                 = map(string)
+    subnets = list(object({
+      name              = string
+      cidr_block        = string
+      availability_zone = string
+    }))
+    tags = map(string)
   })
 
   default  = null
@@ -15,5 +20,10 @@ variable "vpc" {
   validation {
     condition     = var.vpc == null ? true : can(cidrnetmask(var.vpc.cidr_block))
     error_message = "vpc.cidr_block must be a valid IPv4 CIDR block."
+  }
+
+  validation {
+    condition     = var.vpc == null ? true : alltrue([for subnet in var.vpc.subnets : can(cidrnetmask(subnet.cidr_block))])
+    error_message = "Every vpc subnet must use a valid IPv4 CIDR block."
   }
 }

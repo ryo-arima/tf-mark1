@@ -1,4 +1,5 @@
 TF_DIR := terraform
+TF_FILES := $(shell find $(TF_DIR) -type f -name '*.tf' -not -path '*/.terraform/*')
 TF_VALUES_FILE ?= values/development.tfvars
 MINISTACK_URL ?= http://localhost:4566
 STACKPORT_URL ?= http://localhost:8080
@@ -27,7 +28,7 @@ tf-init:
 	terraform -chdir=$(TF_DIR) init
 
 tf-fmt:
-	terraform -chdir=$(TF_DIR) fmt -recursive
+	terraform fmt $(TF_FILES)
 
 tf-validate:
 	terraform -chdir=$(TF_DIR) validate

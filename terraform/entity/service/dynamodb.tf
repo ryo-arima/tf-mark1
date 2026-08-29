@@ -23,4 +23,9 @@ variable "dynamodb" {
     condition     = var.dynamodb == null ? true : contains(["B", "N", "S"], var.dynamodb.hash_key_type)
     error_message = "dynamodb.hash_key_type must be B, N, or S."
   }
+
+  validation {
+    condition     = var.dynamodb == null ? true : var.dynamodb.read_capacity >= 1 && var.dynamodb.write_capacity >= 1
+    error_message = "dynamodb read_capacity and write_capacity must both be at least 1."
+  }
 }

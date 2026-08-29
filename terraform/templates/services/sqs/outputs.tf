@@ -1,9 +1,9 @@
 output "queue_arn" {
-  description = "ARN of the jobs queue"
-  value       = module.jobs_queue.arn
+  description = "ARN of the SQS queue"
+  value       = aws_sqs_queue.this.arn
 }
 
 output "queue_url" {
-  description = "URL of the jobs queue"
-  value       = module.jobs_queue.url
+  description = "URL of the SQS queue"
+  value       = aws_sqs_queue.this.url
 }
