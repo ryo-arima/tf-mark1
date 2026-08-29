@@ -29,16 +29,16 @@
 
 - `docker-compose.yaml` defines MiniStack, Redis, StackPort, persistent volumes, health checks, and the Docker network.
 - `.env.example` defines configurable defaults for Compose and MiniStack.
-- `terraform/versions.tf` defines Terraform and AWS provider version constraints.
-- `terraform/provider.tf` routes supported AWS services to the MiniStack endpoint.
+- `terraform/global.tf` defines Terraform and AWS provider version constraints and routes supported AWS services to the MiniStack endpoint.
 - `terraform/values/` owns environment parameter files and the environment composition entry point.
+- `terraform/values/share.tf` defines the naming and tagging context shared by infrastructure concept modules.
 - `terraform/entity/module/` defines strict input types for infrastructure abstraction modules.
 - `terraform/entity/service/` defines strict input types consumed by concrete AWS service templates.
 - `terraform/entity/util/` defines strict input types for shared utility context.
 - `terraform/modules/<concept>/` contains thin infrastructure abstractions such as datastore, load balancer, event, CI/CD, IAM, monitor, network, and security. Each abstraction calls modules under `terraform/templates/services/`.
 - `terraform/modules/README.md` is the AWS service-to-category catalog and records the default representative for each implemented abstraction.
 - `terraform/templates/services/<aws-service>/base.tf` validates service parameters through `terraform/entity/service/` and defines resources for one AWS service.
-- `terraform/utils/` contains shared or miscellaneous Terraform processing that is not owned by one AWS service.
+- `terraform/templates/utils/` contains reusable or miscellaneous Terraform processing that is not owned by one AWS service.
 - `terraform/main.tf` only delegates infrastructure composition to `terraform/values/`.
 - `Makefile` provides common Compose and Terraform operations.
 - `README.md` documents setup and operating procedures for users.
@@ -53,11 +53,14 @@
 - Keep concept modules thin: they may derive names, merge tags, and connect dependencies, but must not define AWS resources or instantiate `entity/service` directly.
 - Keep IAM one-to-one: `terraform/modules/iam/` may call only `terraform/templates/services/iam/`, and other concept modules must consume IAM outputs instead of calling the IAM service template directly.
 - Connect cross-module dependencies in `terraform/values/base.tf`; concept modules must not reach into sibling concept modules.
+- Keep layer-wide locals and derived settings in a `share.tf` file or a dedicated `share/` module when Terraform module boundaries require one.
+- Rely on the default AWS provider inherited from `terraform/global.tf`; do not repeat `providers = { aws = aws }` on local module calls.
+- Add an explicit `providers` map only when an aliased provider configuration requires one.
 - Instantiate `entity/service` from each concrete service template before using service parameters in AWS resources.
 - Classify a new AWS service using `terraform/modules/README.md`; update the catalog when introducing or changing a category.
 - Create one directory per AWS service under `terraform/templates/services/` and place its resource definitions in an exact `base.tf` file.
 - Do not create AWS service directories directly under `terraform/templates/`.
-- Put miscellaneous shared Terraform processing under `terraform/utils/`.
+- Put miscellaneous shared Terraform processing under `terraform/templates/utils/`.
 - Do not define AWS resources directly in the root module, values layer, or infrastructure abstraction modules; AWS resources belong under `terraform/templates/services/`.
 - Wire every new infrastructure abstraction from `terraform/values/base.tf` and keep the root module limited to calling the values layer.
 - Use `datastore` as the infrastructure abstraction name; do not use `storage` or the misspelling `strage` for this category.
@@ -72,7 +75,7 @@
 ## AWS connection safety
 
 - Never change an AWS provider endpoint to a real AWS endpoint.
-- When adding an AWS service, add its corresponding entry to `terraform/provider.tf` and route it to MiniStack.
+- When adding an AWS service, add its corresponding entry to the AWS provider in `terraform/global.tf` and route it to MiniStack.
 - Never add real AWS access keys, secrets, profiles, ARNs, or account IDs to code or configuration examples.
 - The Docker socket mount is required to run local Lambda, RDS, ECS, and similar workloads. Do not remove it unless explicitly requested.
 - Preserve the MiniStack persistent volume and loopback-only port binding.
@@ -101,7 +104,7 @@ terraform -chdir=terraform plan -var-file=values/development.tfvars
 ## Completion criteria
 
 - Syntax validation succeeds for every changed configuration file.
-- Terraform code follows the `values/`, `entity/`, `modules/`, `templates/services/`, and `utils/` layer boundaries.
+- Terraform code follows the `values/`, `entity/`, `modules/`, `templates/services/`, and `templates/utils/` layer boundaries.
 - MiniStack reports a healthy status.
 - StackPort reports a healthy status and reaches MiniStack through the Compose network.
 - The Terraform plan shows only the intended changes.

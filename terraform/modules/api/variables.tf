@@ -1,11 +1,9 @@
-variable "resource_prefix" {
-  description = "Normalized prefix used for API resource names"
-  type        = string
-}
-
-variable "common_tags" {
-  description = "Tags shared by every infrastructure abstraction"
-  type        = map(string)
+variable "context" {
+  description = "Shared naming and tagging context"
+  type = object({
+    resource_prefix = string
+    common_tags     = map(string)
+  })
 }
 
 variable "config" {

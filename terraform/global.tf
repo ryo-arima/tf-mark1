@@ -1,3 +1,30 @@
+terraform {
+  required_version = ">= 1.6.0, < 2.0.0"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
+  }
+}
+
+variable "aws_region" {
+  description = "AWS region used by MiniStack"
+  type        = string
+}
+
+variable "ministack_endpoint" {
+  description = "MiniStack endpoint accessed from the host"
+  type        = string
+
+  validation {
+    condition     = startswith(var.ministack_endpoint, "http://") || startswith(var.ministack_endpoint, "https://")
+    error_message = "ministack_endpoint must be a URL beginning with http:// or https://."
+  }
+}
+
+// The default AWS provider is inherited by every local child module.
 provider "aws" {
   region                      = var.aws_region
   access_key                  = "test"

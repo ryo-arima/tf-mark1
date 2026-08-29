@@ -25,7 +25,7 @@ module "module_entity" {
 }
 
 module "utilities" {
-  source = "../utils"
+  source = "../templates/utils"
 
   project_name = module.util_entity.context.project_name
 }
@@ -33,168 +33,99 @@ module "utilities" {
 module "network" {
   source = "../modules/network"
 
-  providers = {
-    aws = aws
-  }
-
-  resource_prefix = module.utilities.resource_prefix
-  common_tags     = module.util_entity.context.common_tags
-  config          = module.module_entity.network
+  context = local.module_context
+  config  = module.module_entity.network
 }
 
 module "compute" {
   source = "../modules/compute"
 
-  providers = {
-    aws = aws
-  }
-
-  resource_prefix = module.utilities.resource_prefix
-  common_tags     = module.util_entity.context.common_tags
-  config          = module.module_entity.compute
+  context = local.module_context
+  config  = module.module_entity.compute
 }
 
 module "datastore" {
   source = "../modules/datastore"
 
-  providers = {
-    aws = aws
-  }
-
-  resource_prefix = module.utilities.resource_prefix
-  common_tags     = module.util_entity.context.common_tags
-  config          = module.module_entity.datastore
+  context = local.module_context
+  config  = module.module_entity.datastore
 }
 
 module "messaging" {
   source = "../modules/messaging"
 
-  providers = {
-    aws = aws
-  }
-
-  resource_prefix = module.utilities.resource_prefix
-  common_tags     = module.util_entity.context.common_tags
-  config          = module.module_entity.messaging
+  context = local.module_context
+  config  = module.module_entity.messaging
 }
 
 module "api" {
   source = "../modules/api"
 
-  providers = {
-    aws = aws
-  }
-
-  resource_prefix = module.utilities.resource_prefix
-  common_tags     = module.util_entity.context.common_tags
-  config          = module.module_entity.api
+  context = local.module_context
+  config  = module.module_entity.api
 }
 
 module "analytics" {
   source = "../modules/analytics"
 
-  providers = {
-    aws = aws
-  }
-
-  resource_prefix = module.utilities.resource_prefix
-  common_tags     = module.util_entity.context.common_tags
-  config          = module.module_entity.analytics
+  context = local.module_context
+  config  = module.module_entity.analytics
 }
 
 module "configuration" {
   source = "../modules/configuration"
 
-  providers = {
-    aws = aws
-  }
-
-  resource_prefix = module.utilities.resource_prefix
-  common_tags     = module.util_entity.context.common_tags
-  config          = module.module_entity.configuration
+  context = local.module_context
+  config  = module.module_entity.configuration
 }
 
 module "dns" {
   source = "../modules/dns"
 
-  providers = {
-    aws = aws
-  }
-
-  common_tags = module.util_entity.context.common_tags
-  config      = module.module_entity.dns
+  context = local.module_context
+  config  = module.module_entity.dns
 }
 
 module "event" {
   source = "../modules/event"
 
-  providers = {
-    aws = aws
-  }
-
-  resource_prefix = module.utilities.resource_prefix
-  common_tags     = module.util_entity.context.common_tags
-  config          = module.module_entity.event
+  context = local.module_context
+  config  = module.module_entity.event
 }
 
 module "monitor" {
   source = "../modules/monitor"
 
-  providers = {
-    aws = aws
-  }
-
-  resource_prefix = module.utilities.resource_prefix
-  common_tags     = module.util_entity.context.common_tags
-  config          = module.module_entity.monitor
+  context = local.module_context
+  config  = module.module_entity.monitor
 }
 
 module "registry" {
   source = "../modules/registry"
 
-  providers = {
-    aws = aws
-  }
-
-  resource_prefix = module.utilities.resource_prefix
-  common_tags     = module.util_entity.context.common_tags
-  config          = module.module_entity.registry
+  context = local.module_context
+  config  = module.module_entity.registry
 }
 
 module "security" {
   source = "../modules/security"
 
-  providers = {
-    aws = aws
-  }
-
-  resource_prefix = module.utilities.resource_prefix
-  common_tags     = module.util_entity.context.common_tags
-  config          = module.module_entity.security
+  context = local.module_context
+  config  = module.module_entity.security
 }
 
 module "loadbalancer" {
   source = "../modules/loadbalancer"
 
-  providers = {
-    aws = aws
-  }
-
-  resource_prefix = module.utilities.resource_prefix
-  common_tags     = module.util_entity.context.common_tags
-  subnet_ids      = module.network.subnet_ids
-  config          = module.module_entity.loadbalancer
+  context    = local.module_context
+  subnet_ids = module.network.subnet_ids
+  config     = module.module_entity.loadbalancer
 }
 
 module "cicd" {
   source = "../modules/cicd"
 
-  providers = {
-    aws = aws
-  }
-
-  resource_prefix  = module.utilities.resource_prefix
-  common_tags      = module.util_entity.context.common_tags
+  context          = local.module_context
   service_role_arn = module.iam.role_arn
   config           = module.module_entity.cicd
 }
@@ -202,13 +133,8 @@ module "cicd" {
 module "iam" {
   source = "../modules/iam"
 
-  providers = {
-    aws = aws
-  }
-
-  resource_prefix = module.utilities.resource_prefix
-  common_tags     = module.util_entity.context.common_tags
-  config          = module.module_entity.iam
+  context = local.module_context
+  config  = module.module_entity.iam
 }
 
 moved {

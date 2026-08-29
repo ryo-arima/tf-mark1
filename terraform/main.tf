@@ -2,10 +2,6 @@
 module "infrastructure" {
   source = "./values"
 
-  providers = {
-    aws = aws
-  }
-
   context       = var.context
   network       = var.network
   compute       = var.compute

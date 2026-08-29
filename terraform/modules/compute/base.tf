@@ -1,12 +1,8 @@
 module "ecs" {
   source = "../../templates/services/ecs"
 
-  providers = {
-    aws = aws
-  }
-
   config = {
-    cluster_name = "${var.resource_prefix}-${var.config.cluster_name}"
-    tags         = merge(var.common_tags, var.config.tags)
+    cluster_name = "${var.context.resource_prefix}-${var.config.cluster_name}"
+    tags         = merge(var.context.common_tags, var.config.tags)
   }
 }

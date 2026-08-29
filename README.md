@@ -39,7 +39,7 @@ The development values create 19 resources across 15 infrastructure categories. 
 
 ## Terraform structure
 
-The Terraform configuration separates environment values, infrastructure abstractions, AWS service resources, entity types, and shared utility processing.
+The Terraform configuration separates global settings, environment values, infrastructure abstractions, AWS service resources, entity types, and shared utility processing.
 
 ```text
 terraform/
@@ -47,6 +47,7 @@ terraform/
 |   |-- module/             # Infrastructure category input types
 |   |-- service/            # AWS service input types
 |   `-- util/               # Shared context types
+|-- global.tf               # Terraform constraints and MiniStack provider
 |-- main.tf
 |-- modules/
 |   |-- analytics/
@@ -64,29 +65,29 @@ terraform/
 |   |-- network/
 |   |-- registry/
 |   `-- security/
-|-- provider.tf
 |-- templates/
-|   `-- services/
-|       |-- apigatewayv2/   # AWS service resource definition
-|       |-- cloudwatch_logs/
-|       |-- codebuild/
-|       |-- dynamodb/
-|       |-- ecr/
-|       |-- ecs/
-|       |-- elbv2/
-|       |-- eventbridge/
-|       |-- glue/
-|       |-- iam/
-|       |-- kms/
-|       |-- route53/
-|       |-- sqs/
-|       |-- ssm/
-|       `-- vpc/
-|-- utils/
-|   `-- naming.tf
+|   |-- services/
+|   |   |-- apigatewayv2/   # AWS service resource definition
+|   |   |-- cloudwatch_logs/
+|   |   |-- codebuild/
+|   |   |-- dynamodb/
+|   |   |-- ecr/
+|   |   |-- ecs/
+|   |   |-- elbv2/
+|   |   |-- eventbridge/
+|   |   |-- glue/
+|   |   |-- iam/
+|   |   |-- kms/
+|   |   |-- route53/
+|   |   |-- sqs/
+|   |   |-- ssm/
+|   |   `-- vpc/
+|   `-- utils/
+|       `-- naming.tf
 `-- values/
     |-- base.tf             # Environment composition entry point
-    `-- development.tfvars  # Local development parameters
+    |-- development.tfvars  # Local development parameters
+    `-- share.tf            # Context shared by concept modules
 ```
 
 The dependency flow is:
@@ -95,18 +96,22 @@ The dependency flow is:
 root -> values -> modules -> templates/services
           |                   |
           |                   `-> entity/service
+          |-> templates/utils
           `-> entity/module and entity/util
 ```
 
 - `values/` owns environment parameters and calls infrastructure abstraction modules.
+- `values/share.tf` defines the normalized naming and tagging context passed to every concept module.
 - `entity/` centralizes strict Terraform object types and validation at module, service, and utility boundaries.
 - `modules/` exposes infrastructure concepts such as datastore, load balancer, event, CI/CD, IAM, monitor, network, and security. Concept modules remain thin and contain no AWS resources or service validation modules.
 - `modules/iam` maps one-to-one to `templates/services/iam`; dependent modules consume its outputs instead of calling the IAM service directly.
 - [terraform/modules/README.md](terraform/modules/README.md) assigns supported AWS service families to module categories and identifies each default representative.
 - `templates/services/<aws-service>/base.tf` validates service parameters through `entity/service/` and defines the AWS resources for one service.
 - AWS service directories exist only under `templates/services/`; do not add service directories directly under `templates/`.
-- `utils/` contains shared or miscellaneous Terraform processing that is not owned by one AWS service.
+- `templates/utils/` contains reusable or miscellaneous Terraform processing that is not owned by one AWS service.
 - The root `main.tf` delegates composition to `values/` and does not define AWS resources directly.
+
+`terraform/global.tf` is the single source for Terraform version constraints, AWS provider requirements, local credentials, and MiniStack endpoints. The default AWS provider is inherited through the local module tree, so module calls must not repeat `providers = { aws = aws }`. Add an explicit provider mapping only when an aliased provider configuration is introduced.
 
 Cross-module dependencies are connected only by the values layer:
 

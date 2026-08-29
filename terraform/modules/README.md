@@ -1,6 +1,6 @@
 # Infrastructure module catalog
 
-The directories in this location classify AWS services by infrastructure concept. Concept modules are intentionally thin: they derive names, merge common tags, connect cross-category dependencies, and delegate AWS resources to `../templates/services/<aws-service>/`. Service templates perform service-level type validation through `../entity/service/`.
+The directories in this location classify AWS services by infrastructure concept. Concept modules are intentionally thin: they consume the naming and tagging context from `../values/share.tf`, connect cross-category dependencies, and delegate AWS resources to `../templates/services/<aws-service>/`. Service templates perform service-level type validation through `../entity/service/`.
 
 The default development values provision one lightweight representative for every implemented category. Other service families in the same row are classification targets for future templates; their presence in this catalog does not mean that a resource is already implemented.
 
@@ -38,6 +38,8 @@ The values layer owns the two current cross-module dependency edges:
 - `iam` provides the service role ARN to `cicd`.
 
 Concept modules must not reach into another concept module or call another concept's service template directly.
+
+All local modules inherit the default AWS provider configured in `../global.tf`. Do not repeat a `providers` map on module calls unless an aliased provider configuration requires an explicit mapping.
 
 When adding a service:
 

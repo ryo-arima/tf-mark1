@@ -26,7 +26,7 @@ network = {
       availability_zone = "ap-northeast-1c"
     },
   ]
-  tags                 = {}
+  tags = {}
 }
 
 compute = {
